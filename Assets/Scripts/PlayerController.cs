@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
@@ -9,6 +10,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private GameObject laserPrefab;
     [SerializeField] private Transform firePoint;
     [SerializeField] private float fireInterval = 0.25f;
+    [Header("Damage Settings")]
+    [SerializeField] private float invincibilityDuration = 1.5f;
+    [SerializeField] private float blinkInterval = 0.12f;
+
+    private bool isInvincible = false;
 
     private Rigidbody2D rb;
     private Collider2D playerCollider;
@@ -86,20 +92,88 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Asteroid"))
+        if (!other.CompareTag("Asteroid"))
+            return;
+
+        // Pha huy asteroid khi no va cham voi tau
+        Destroy(other.gameObject);
+
+        // Khong nhan sat thuong neu dang bat tu
+        if (isInvincible)
+            return;
+
+        if (GameManager.Instance == null)
         {
-            if (GameManager.Instance != null)
+            Debug.LogError("Khong tim thay GameManager!");
+            return;
+        }
+
+        StartCoroutine(DamageRoutine());
+    }
+
+    private IEnumerator DamageRoutine()
+    {
+        isInvincible = true;
+
+        GameManager manager = GameManager.Instance;
+
+        if (manager == null)
+        {
+            isInvincible = false;
+            yield break;
+        }
+
+        // Giam mot mang
+        manager.LoseLife();
+
+        // Dung xu ly neu game da ket thuc
+        if (manager.IsGameEnded)
+            yield break;
+
+        // Lay tat ca SpriteRenderer cua tau va cac doi tuong con
+        SpriteRenderer[] renderers =
+            GetComponentsInChildren<SpriteRenderer>();
+
+        bool[] originalStates = new bool[renderers.Length];
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            originalStates[i] = renderers[i] != null &&
+                                renderers[i].enabled;
+        }
+
+        float interval = Mathf.Max(0.05f, blinkInterval);
+        float duration = Mathf.Max(0f, invincibilityDuration);
+        float elapsed = 0f;
+        bool visible = false;
+
+        // Lam tau nhap nhay trong thoi gian bat tu
+        while (elapsed < duration)
+        {
+            for (int i = 0; i < renderers.Length; i++)
             {
-                GameManager.Instance.PlayerHitAsteroid();
+                if (renderers[i] != null)
+                {
+                    renderers[i].enabled =
+                        originalStates[i] && visible;
+                }
+            }
+
+            visible = !visible;
+
+            yield return new WaitForSeconds(interval);
+            elapsed += interval;
+        }
+
+        // Khoi phuc trang thai hien thi ban dau
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].enabled = originalStates[i];
             }
         }
-        else if (other.CompareTag("Star"))
-        {
-            StarCollectible star = other.GetComponent<StarCollectible>();
-            if (star != null)
-            {
-                star.Collect();
-            }
-        }
+
+        isInvincible = false;
     }
 }

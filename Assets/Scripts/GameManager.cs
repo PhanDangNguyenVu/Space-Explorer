@@ -1,21 +1,27 @@
-﻿using UnityEngine;
-using UnityEngine.SceneManagement;
+﻿
+using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
     [Header("UI")]
-    [SerializeField] private TMP_Text scoreText;
+    public TMP_Text scoreText;
+    public TMP_Text livesText;
 
-    [Header("Rules")]
-    [SerializeField] private int asteroidPenalty = 10;
+    [Header("Lives")]
+    [Min(1)]
+    public int startingLives = 3;
 
-    private int score;
-    private bool gameEnded;
+    private int score = 0;
+    private int lives;
+    private bool gameEnded = false;
 
     public int Score => score;
+    public int Lives => lives;
+    public bool IsGameEnded => gameEnded;
 
     private void Awake()
     {
@@ -26,38 +32,44 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
-        score = 0;
-        gameEnded = false;
-    }
 
-    private void Start()
-    {
+        lives = Mathf.Max(1, startingLives);
+
         UpdateScoreUI();
+        UpdateLivesUI();
     }
 
     public void AddScore(int amount)
     {
-        if (gameEnded || amount <= 0)
-        {
+        if (gameEnded)
             return;
-        }
 
         score += amount;
         UpdateScoreUI();
     }
 
-    public void PlayerHitAsteroid()
+    public void LoseLife()
     {
         if (gameEnded)
-        {
             return;
-        }
 
-        // Tru diem truoc khi ket thuc, khong de diem am.
-        score = Mathf.Max(0, score - asteroidPenalty);
+        lives = Mathf.Max(0, lives - 1);
+        UpdateLivesUI();
+
+        if (lives <= 0)
+        {
+            EndGame();
+        }
+    }
+
+    public void EndGame()
+    {
+        if (gameEnded)
+            return;
+
         gameEnded = true;
 
-        PlayerPrefs.SetInt("SpaceExplorer.FinalScore", score);
+        PlayerPrefs.SetInt("FinalScore", score);
         PlayerPrefs.Save();
 
         SceneManager.LoadScene("EndGame");
@@ -68,6 +80,22 @@ public class GameManager : MonoBehaviour
         if (scoreText != null)
         {
             scoreText.text = "Score: " + score;
+        }
+    }
+
+    private void UpdateLivesUI()
+    {
+        if (livesText != null)
+        {
+            livesText.text = "Lives: " + lives;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
         }
     }
 }
