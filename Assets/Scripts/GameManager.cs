@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     [Header("Lives")]
     [Min(1)]
     public int startingLives = 3;
+    public int maxLives = 5;
 
     private int score = 0;
     private int lives;
@@ -33,7 +34,7 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
 
-        lives = Mathf.Max(1, startingLives);
+        lives = Mathf.Clamp(startingLives, 1, Mathf.Max(1, maxLives));
 
         UpdateScoreUI();
         UpdateLivesUI();
@@ -62,6 +63,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void AddLife(int amount = 1)
+    {
+        if (gameEnded)
+            return;
+
+        lives = Mathf.Min(
+            Mathf.Max(1, maxLives),
+            lives + Mathf.Max(1, amount)
+        );
+
+        UpdateLivesUI();
+    }
+
     public void EndGame()
     {
         if (gameEnded)
@@ -69,9 +83,10 @@ public class GameManager : MonoBehaviour
 
         gameEnded = true;
 
-        PlayerPrefs.SetInt("FinalScore", score);
+        PlayerPrefs.SetInt("SpaceExplorer.FinalScore", score);
         PlayerPrefs.Save();
 
+        Time.timeScale = 1f;
         SceneManager.LoadScene("EndGame");
     }
 

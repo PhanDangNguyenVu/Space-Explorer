@@ -14,6 +14,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float invincibilityDuration = 1.5f;
     [SerializeField] private float blinkInterval = 0.12f;
 
+    [Header("Power-up Settings")]
+    public float normalFireInterval = 0.35f;
+    public float rapidFireInterval = 0.1f;
+
+    public GameObject shieldVisual;
+
+    private float nextFireTime = 0f;
+    private float rapidFireEndTime = 0f;
+
+    private bool shieldActive = false;
+    private Coroutine shieldRoutine;
+
+    //
     private bool isInvincible = false;
 
     private Rigidbody2D rb;
@@ -40,7 +53,7 @@ public class PlayerController : MonoBehaviour
         // Giu Space de ban lien tuc theo khoang cach thoi gian.
         if (Input.GetKey(KeyCode.Space) && Time.time >= nextShotTime)
         {
-            Shoot();
+            HandleShooting();
             nextShotTime = Time.time + fireInterval;
         }
     }
@@ -92,15 +105,28 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag("Asteroid"))
+        Asteroid asteroid = other.GetComponentInParent<Asteroid>();
+
+        if (asteroid == null && !other.CompareTag("Asteroid"))
             return;
 
-        // Pha huy asteroid khi no va cham voi tau
-        Destroy(other.gameObject);
+        // Pha huy toan bo asteroid, ke ca khi collider nam o object con
+        if (asteroid != null)
+            Destroy(asteroid.gameObject);
+        else
+            Destroy(other.gameObject);
 
-        // Khong nhan sat thuong neu dang bat tu
+        // Dang bat tu thi khong nhan sat thuong
         if (isInvincible)
             return;
+
+        // Shield hap thu mot lan va cham
+        if (shieldActive)
+        {
+            ConsumeShield();
+            Debug.Log("Shield da hap thu mot lan va cham!");
+            return;
+        }
 
         if (GameManager.Instance == null)
         {
@@ -176,4 +202,75 @@ public class PlayerController : MonoBehaviour
 
         isInvincible = false;
     }
+    private void HandleShooting()
+    {
+        if (!Input.GetKey(KeyCode.Space))
+            return;
+
+        float currentInterval =
+            Time.time < rapidFireEndTime
+            ? rapidFireInterval
+            : normalFireInterval;
+
+        if (Time.time >= nextFireTime)
+        {
+            Shoot();
+            nextFireTime = Time.time + currentInterval;
+        }
+    }
+    public void ActivateRapidFire(float duration)
+    {
+        rapidFireEndTime = Mathf.Max(
+            rapidFireEndTime,
+            Time.time + duration
+        );
+    }
+
+    public void ActivateShield(float duration)
+    {
+        if (shieldRoutine != null)
+        {
+            StopCoroutine(shieldRoutine);
+        }
+
+        shieldActive = true;
+
+        if (shieldVisual != null)
+        {
+            shieldVisual.SetActive(true);
+        }
+
+        shieldRoutine = StartCoroutine(ShieldDurationRoutine(duration));
+    }
+
+    private IEnumerator ShieldDurationRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        shieldActive = false;
+
+        if (shieldVisual != null)
+        {
+            shieldVisual.SetActive(false);
+        }
+
+        shieldRoutine = null;
+    }
+
+    private void ConsumeShield()
+    {
+        shieldActive = false;
+
+        if (shieldRoutine != null)
+        {
+            StopCoroutine(shieldRoutine);
+            shieldRoutine = null;
+        }
+
+        if (shieldVisual != null)
+        {
+            shieldVisual.SetActive(false);
+        }
+    }
+
 }

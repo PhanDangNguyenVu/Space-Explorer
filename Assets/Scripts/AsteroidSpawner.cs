@@ -1,86 +1,94 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class AsteroidSpawner : MonoBehaviour
 {
-    [SerializeField] private GameObject asteroidPrefab;
-    [SerializeField] private int initialAsteroidCount = 8;
-    [SerializeField] private float spawnInterval = 2f;
-    [SerializeField] private float spawnMargin = 0.6f;
-    [SerializeField] private float targetInset = 0.5f;
+    [Header("Asteroid")]
+    public GameObject asteroidPrefab;
 
+    [Header("Spawn Settings")]
+    public float baseSpawnInterval = 2f;
+    public float minSpawnInterval = 0.5f;
+    public float spawnIntervalDecreasePerMinute = 0.3f;
+
+    [Header("Difficulty Settings")]
+    public float speedIncreasePerMinute = 0.25f;
+    public float maxSpeedMultiplier = 2f;
+
+    private float elapsedGameTime = 0f;
     private Camera mainCamera;
+
+    public static float SpeedMultiplier { get; private set; } = 1f;
 
     private void Start()
     {
         mainCamera = Camera.main;
+        elapsedGameTime = 0f;
+        SpeedMultiplier = 1f;
 
-        if (asteroidPrefab == null)
+        if (mainCamera == null)
         {
-            Debug.LogError("AsteroidSpawner: chua gan Asteroid Prefab.");
+            Debug.LogError("Khong tim thay Main Camera!");
             return;
         }
 
-        for (int i = 0; i < initialAsteroidCount; i++)
+        if (asteroidPrefab == null)
         {
-            SpawnAsteroid();
+            Debug.LogError("Chua gan Asteroid Prefab!");
+            return;
         }
 
-        InvokeRepeating(nameof(SpawnAsteroid), 1f, spawnInterval);
+        StartCoroutine(SpawnLoop());
+    }
+
+    private void Update()
+    {
+        elapsedGameTime += Time.deltaTime;
+
+        float minutes = elapsedGameTime / 60f;
+
+        SpeedMultiplier = Mathf.Min(
+            maxSpeedMultiplier,
+            1f + minutes * speedIncreasePerMinute
+        );
+    }
+
+    private IEnumerator SpawnLoop()
+    {
+        while (true)
+        {
+            SpawnAsteroid();
+
+            float minutes = elapsedGameTime / 60f;
+
+            float currentInterval = Mathf.Max(
+                minSpawnInterval,
+                baseSpawnInterval -
+                minutes * spawnIntervalDecreasePerMinute
+            );
+
+            yield return new WaitForSeconds(currentInterval);
+        }
     }
 
     private void SpawnAsteroid()
     {
         if (asteroidPrefab == null || mainCamera == null)
-        {
             return;
-        }
 
-        Vector3 bottomLeft = mainCamera.ViewportToWorldPoint(
-            new Vector3(0f, 0f, 0f));
-        Vector3 topRight = mainCamera.ViewportToWorldPoint(
-            new Vector3(1f, 1f, 0f));
+        float x = Random.Range(0.05f, 0.95f);
+        float depth = Mathf.Abs(mainCamera.transform.position.z);
 
-        Vector2 spawnPosition;
-        int side = Random.Range(0, 4);
+        Vector3 spawnPosition = mainCamera.ViewportToWorldPoint(
+            new Vector3(x, 1.1f, depth)
+        );
 
-        switch (side)
-        {
-            case 0: // Ben trai
-                spawnPosition = new Vector2(
-                    bottomLeft.x - spawnMargin,
-                    Random.Range(bottomLeft.y, topRight.y));
-                break;
+        spawnPosition.z = 0f;
 
-            case 1: // Ben phai
-                spawnPosition = new Vector2(
-                    topRight.x + spawnMargin,
-                    Random.Range(bottomLeft.y, topRight.y));
-                break;
-
-            case 2: // Phia tren
-                spawnPosition = new Vector2(
-                    Random.Range(bottomLeft.x, topRight.x),
-                    topRight.y + spawnMargin);
-                break;
-
-            default: // Phia duoi
-                spawnPosition = new Vector2(
-                    Random.Range(bottomLeft.x, topRight.x),
-                    bottomLeft.y - spawnMargin);
-                break;
-        }
-
-        Vector2 target = new Vector2(
-            Random.Range(bottomLeft.x + targetInset, topRight.x - targetInset),
-            Random.Range(bottomLeft.y + targetInset, topRight.y - targetInset));
-
-        GameObject asteroidObject = Instantiate(
-            asteroidPrefab, spawnPosition, Quaternion.identity);
-
-        Asteroid asteroid = asteroidObject.GetComponent<Asteroid>();
-        if (asteroid != null)
-        {
-            asteroid.SetDirection(target - spawnPosition);
-        }
+        Instantiate(
+            asteroidPrefab,
+            spawnPosition,
+            Quaternion.identity
+        );
     }
 }

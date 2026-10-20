@@ -178,12 +178,12 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'HOW TO PLAY
 
-    
+
 
     ARROW KEYS  - Move the spaceship
 
-    SPACE      
-    - Shoot lasers
+    SPACE       -
+    Shoot lasers
 
     COLLECT     - Collect stars to earn 10 points
 
@@ -193,7 +193,7 @@ MonoBehaviour:
     WARNING     - An asteroid hit deducts 10 points and ends
     the game
 
-    
+
 
     Explore space and collect as many stars as possible!
 
@@ -232,7 +232,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 1024
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
@@ -558,7 +558,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0.00002861023, y: -0.000019073486}
-  m_SizeDelta: {x: 700, y: 450}
+  m_SizeDelta: {x: 700, y: 550}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &763133222
 MonoBehaviour:
@@ -987,7 +987,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -189}
+  m_AnchoredPosition: {x: 0, y: -231}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1052966909
